@@ -101,8 +101,10 @@ function just_construct_ssa(ci::CodeInfo, code::Vector{Any}, nargs::Int, sv::Opt
     cfg = compute_basic_blocks(code)
     defuse_insts = scan_slot_def_use(nargs, ci, code)
     @timeit "domtree 1" domtree = construct_domtree(cfg)
-    ir = let code = Any[nothing for _ = 1:length(code)]
-            IRCode(code, Any[], ci.codelocs, flags, cfg, collect(LineInfoNode, ci.linetable), sv.slottypes, meta, sv.sptypes)
+    ir = let code = Any[nothing for _ = 1:length(code)],
+             types = Any[],
+             stmts = InstructionStream(code, types, ci.codelocs, flags)
+            IRCode(stmts, cfg, collect(LineInfoNode, ci.linetable), sv.slottypes, meta, sv.sptypes)
         end
     @timeit "construct_ssa" ir = construct_ssa!(ci, code, ir, domtree, defuse_insts, nargs, sv.sptypes, sv.slottypes)
     return ir
