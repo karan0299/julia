@@ -24,6 +24,8 @@ New library functions
 New library features
 --------------------
 
+* `Ref{NTuple{N,T}}` can be passed to `Ptr{T}`/`Ref{T}` `ccall` signatures ([#34199])
+
 
 Standard library changes
 ------------------------
