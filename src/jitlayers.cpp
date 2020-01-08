@@ -460,18 +460,16 @@ void JuliaOJIT::addModule(std::unique_ptr<Module> M)
 {
 #ifndef JL_NDEBUG
     // validate the relocations for M
-    for (Module::global_object_iterator I = M->global_object_begin(), E = M->global_object_end(); I != E; ) {
-        GlobalObject *F = &*I;
-        ++I;
-        if (F->isDeclaration()) {
-            if (F->use_empty())
-                F->eraseFromParent();
-            else if (!((isa<Function>(F) && isIntrinsicFunction(cast<Function>(F))) ||
-                       findUnmangledSymbol(F->getName()) ||
+    for (GlobalObject &F : M->global_objects()) {
+        if (F.isDeclaration()) {
+            if (F.use_empty())
+                F.eraseFromParent();
+            else if (!((isa<Function>(F) && isIntrinsicFunction(cast<Function>(&F))) ||
+                       findUnmangledSymbol(F.getName()) ||
                        SectionMemoryManager::getSymbolAddressInProcess(
-                           getMangledName(F->getName())))) {
+                           getMangledName(F.getName())))) {
                 std::cerr << "FATAL ERROR: "
-                          << "Symbol \"" << F->getName().str() << "\""
+                          << "Symbol \"" << F.getName().str() << "\""
                           << "not found";
                 abort();
             }
@@ -771,16 +769,15 @@ static void jl_merge_recursive(Module *m, Module *collector)
     // since the declarations may get destroyed by the jl_merge_module call.
     // this is also why we copy the Name string, rather than save a StringRef
     SmallVector<std::string, 8> to_finalize;
-    for (Module::global_object_iterator I = m->global_object_begin(), E = m->global_object_end(); I != E; ++I) {
-        GlobalObject *F = &*I;
-        if (!F->isDeclaration()) {
-            module_for_fname.erase(F->getName());
+    for (GlobalObject &F : m->global_objects()) {
+        if (!F.isDeclaration()) {
+            module_for_fname.erase(F.getName());
         }
-        else if (isa<Function>(F) && !isIntrinsicFunction(cast<Function>(F))) {
-            to_finalize.push_back(F->getName().str());
+        else if (isa<Function>(F) && !isIntrinsicFunction(cast<Function>(&F))) {
+            to_finalize.push_back(F.getName().str());
         }
-        else if (isa<GlobalValue>(F) && module_for_fname.count(F->getName())) {
-            to_finalize.push_back(F->getName().str());
+        else if (isa<GlobalValue>(F) && module_for_fname.count(F.getName())) {
+            to_finalize.push_back(F.getName().str());
         }
     }
 
@@ -846,14 +843,13 @@ void jl_finalize_module(Module *m, bool shadow)
 {
     // record the function names that are part of this Module
     // so it can be added to the JIT when needed
-    for (Module::global_object_iterator I = m->global_object_begin(), E = m->global_object_end(); I != E; ++I) {
-        GlobalObject *F = &*I;
-        if (!F->isDeclaration()) {
+    for (GlobalObject &F : m->global_objects()) {
+        if (!F.isDeclaration()) {
             if (isa<Function>(F)) {
-                bool known = incomplete_fname.erase(F->getName());
+                bool known = incomplete_fname.erase(F.getName());
                 (void)known; // TODO: assert(known); // llvmcall gets this wrong
             }
-            module_for_fname[F->getName()] = m;
+            module_for_fname[F.getName()] = m;
         }
     }
     // in the newer JITs, the shadow module is separate from the execution module
