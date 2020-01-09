@@ -6,6 +6,10 @@ using InteractiveUtils: code_llvm
 
 import Libdl
 
+# platforms that support cfunction with closures
+# (requires LLVM back-end support for trampoline intrinsics)
+const cfunction_closure = Sys.ARCH === :x86_64 || Sys.ARCH === :i686
+
 const libccalltest = "libccalltest"
 
 const verbose = false
@@ -791,6 +795,8 @@ end
 ## cfunction roundtrip
 
 verbose && Libc.flush_cstdio()
+
+if cfunction_closure
 verbose && println("Testing cfunction closures: ")
 
 # helper Type for testing that constructors work
@@ -972,6 +978,12 @@ for (t, v) in ((Complex{Int32}, :ci32), (Complex{Int64}, :ci64),
             @test_throws TypeError ccall(cf, Any, (Ref{Any},), $v)
         end
     end
+end
+
+else
+
+@warn "cfunction: no support for closures on this platform"
+
 end
 
 # issue 13031
