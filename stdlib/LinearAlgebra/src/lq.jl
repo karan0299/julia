@@ -305,16 +305,12 @@ _rightappdimmismatch(rowsorcols) =
 
 function (\)(A::LQ{TA}, b::StridedVector{Tb}) where {TA,Tb}
     S = promote_type(TA,Tb)
-    m = checksquare(A)
-    m == length(b) || throw(DimensionMismatch("left hand side has $m rows, but right hand side has length $(length(b))"))
     AA = Factorization{S}(A)
     x = ldiv!(AA, copy_oftype(b, S))
     return x
 end
 function (\)(A::LQ{TA},B::StridedMatrix{TB}) where {TA,TB}
     S = promote_type(TA,TB)
-    m = checksquare(A)
-    m == size(B,1) || throw(DimensionMismatch("left hand side has $m rows, but right hand side has $(size(B,1)) rows"))
     AA = Factorization{S}(A)
     X = ldiv!(AA, copy_oftype(B, S))
     return X
